@@ -115,11 +115,13 @@
     border-radius: 8px;
     background-color: white;
     font: inherit;
+    cursor: pointer;
 }
 .employee-controls input:focus-visible,.employee-controls select:focus-visible{
     outline: 2px  soild #3730a3;
     outline-offset: 2px;
 }
+
 .dashboard-footer{
     margin-top: 24px;
     padding: 16px 0;

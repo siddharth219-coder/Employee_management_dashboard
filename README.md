@@ -1,16 +1,18 @@
 # Workforce Employee Dashboard
 
-A responsive employee dashboard built with React, TypeScript, Vite, and plain CSS.
+A responsive employee management dashboard built with React, TypeScript, Vite, and plain CSS.
 
 ## Features
 
-- View employees and department counts.
-- Search by name and filter by department.
-- See how many employees match the current filters.
+- Add employees with validation for required fields, email, and salary.
+- Edit employee details and delete employee records.
+- Search by employee name and filter by department together.
+- View total employee and department counts.
+- See separate messages when the list is empty or no employees match the filters.
+
+Employee changes are stored in React state. Refreshing the page restores the sample data.
 
 ## Run locally
-
-From the project folder, run:
 
 ```bash
 npm install

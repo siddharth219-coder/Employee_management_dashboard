@@ -1,7 +1,5 @@
 import { useState,useRef } from 'react'
 import EmployeeCard from './components/EmployeeCard'
-import { employees } from './data/employees'
-import { employees as initialEmployees } from "./data/employees";
 import EmployeeForm from "./components/EmployeeForm";
 import type { Employee } from "./types/employee.types";
 import { useEmployees } from './hooks/useEmployees';
@@ -10,14 +8,6 @@ import { createEmployees, updateEmployee, deleteEmployee } from './services/empl
 
 
 
-let departmentCounts = employees.reduce<Record<string, number>>(
-    (counts, employee) => {
-        const department = employee.department
-        counts[department] = (counts[department] ?? 0) + 1
-        return counts
-    },
-    {},
-)
 const App = () => {
 
     const { employees, setEmployees, isLoading, error, retry } = useEmployees()

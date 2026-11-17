@@ -6,9 +6,10 @@ interface EmployeeCardProps {
     employee: Employee;
     onEdit: (employee: Employee) => void;
     onDelete: (id: number) => void
+    isDeleting:boolean
 }
 
-const EmployeeCard = ({ employee, onEdit, onDelete }: EmployeeCardProps) => {
+const EmployeeCard = ({ employee, onEdit, onDelete, isDeleting }: EmployeeCardProps) => {
     return (
         <article className='employee-card'>
             <div className='employee-avatar' aria-hidden="true">
@@ -27,6 +28,7 @@ const EmployeeCard = ({ employee, onEdit, onDelete }: EmployeeCardProps) => {
                 <button
                     type="button"
                     className="delete-button"
+                    disabled={isDeleting}
                     onClick={() => onDelete(employee.id)}
                 >
                     Delete

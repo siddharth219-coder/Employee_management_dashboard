@@ -120,5 +120,5 @@ export const employees: Employee[]=[
         email:"ganesh@gamil.com",
         department:"QA",
         salary:20000
-    },
+    }
 ]

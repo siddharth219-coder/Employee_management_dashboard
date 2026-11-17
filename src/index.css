@@ -222,6 +222,31 @@
     outline-offset: 2px;
 }
 
+.retry-button{
+    margin-top: 12px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background-color: #2563eb;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.retry-button:hover{
+    background-color: #1d4ed8;
+    transform: translateY(-1px);
+}
+.retry-button:active{
+    transform: translateY(0);
+}
+.retry-button:focus-visible{
+    outline: 3px solid #93c5fd;
+    outline-offset: 3px;
+}
+
+
 @media (max-width: 600px) {
     .employee-form {
         grid-template-columns: minmax(0, 1fr);

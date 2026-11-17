@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useState,useRef } from 'react'
 import EmployeeCard from './components/EmployeeCard'
 import { employees } from './data/employees'
 import { employees as initialEmployees } from "./data/employees";
 import EmployeeForm from "./components/EmployeeForm";
 import type { Employee } from "./types/employee.types";
+import { useEmployees } from './hooks/useEmployees';
+import { createEmployees, updateEmployee, deleteEmployee } from './services/employeeService';
+
 
 
 
@@ -16,7 +19,8 @@ let departmentCounts = employees.reduce<Record<string, number>>(
     {},
 )
 const App = () => {
-    const [employees, setEmployees] = useState(initialEmployees);
+
+    const { employees, setEmployees, isLoading, error, retry } = useEmployees()
 
     const departmentCounts = employees.reduce<Record<string, number>>(
         (counts, employee) => {
@@ -31,6 +35,10 @@ const App = () => {
     const query = search.trim().toLowerCase()
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
 
+    const [isDeleting, setIsDeleting]=useState(false)
+    const [deleteError,setDeleteError]=useState("")
+    const deletingRef=useRef(false)
+
     const filteredEmployees = employees.filter((employee) => {
         const matchesName = employee.name.toLowerCase().includes(query)
 
@@ -39,54 +47,72 @@ const App = () => {
         return matchesName && matchesDepartment
 
     })
-    const handleAddEmployee = (details: Omit<Employee, "id">): void => {
-        setEmployees((currentEmployees) => {
-            const nextId =
-                Math.max(0, ...currentEmployees.map((employee) => employee.id)) + 1;
+    const handleAddEmployee = async (
+        details: Omit<Employee, "id">,
+    ): Promise<void> => {
+        const newEmployee = await createEmployees(details);
 
-            return [...currentEmployees, { ...details, id: nextId }];
-        });
-
+        setEmployees((currentEmployees) => [...currentEmployees, newEmployee]);
         setSearch("");
         setSelectedDepartment("");
     };
-    const handleSaveEmployee = (details: Omit<Employee, "id">): void => {
+    const handleSaveEmployee = async (
+        details: Omit<Employee, "id">,
+    ): Promise<void> => {
         if (!editingEmployee) {
-            handleAddEmployee(details);
-            return;
+            await handleAddEmployee(details)
+            return
         }
 
-        const employeeId = editingEmployee.id;
+        const employeeId = editingEmployee.id
+        const updatedEmployee = await updateEmployee(employeeId, details)
 
         setEmployees((currentEmployees) =>
             currentEmployees.map((employee) =>
-                employee.id === employeeId ? { ...employee, ...details } : employee,
-            ),
-        );
+                employee.id === employeeId ? updatedEmployee : employee
+            )
+        )
 
-        setEditingEmployee(null);
-        setSearch("");
-        setSelectedDepartment("");
-    };
-    const handleDeleteEmployee = (id: number): void => {
-        setEmployees((currentEmployees) =>
-            currentEmployees.filter((employee) => employee.id !== id),
-        );
+        setEditingEmployee(null)
+        setSearch("")
+        setSelectedDepartment("")
+    }
+    const handleDeleteEmployee = async (id:number):Promise<void>=>{
+        if (deletingRef.current) return
 
-        if (editingEmployee?.id === id) {
-            setEditingEmployee(null);
+        deletingRef.current=true
+        setIsDeleting(true)
+        setDeleteError("")
+
+
+        try {
+            await deleteEmployee(id)
+
+            setEmployees((current)=>current.filter((employee)=> employee.id !==id))
+            setEditingEmployee((current)=>(current?.id===id? null:current))
+            setSelectedDepartment("")
+            
+        } catch (error) {
+            setDeleteError(
+                error instanceof Error? error.message: "Could not delete employee"
+            )
+        }finally{
+            deletingRef.current=false
+            setIsDeleting(false)
         }
+    }
+    if (isLoading) {
+        return <p role='status'>Loading employees...</p>
+    }
 
-        const departmentStillExists = employees.some(
-            (employee) =>
-                employee.id !== id && employee.department === selectedDepartment,
-        );
-
-        if (selectedDepartment && !departmentStillExists) {
-            setSelectedDepartment("");
-        }
-    };
-
+    if (error) {
+        return (
+            <div>
+                <p role='alert'>Could not load employees</p>
+                <button className='retry-button' type='button' onClick={retry}>Retry</button>
+            </div>
+        )
+    }
     return (
         <div className='dashboard'>
             <aside className='sidebar'>
@@ -119,6 +145,7 @@ const App = () => {
                 />
                 <section id='employees' className='employees'>
                     <h2>Employees</h2>
+                    {deleteError && <p role='alert'>{deleteError}</p>}
                     <div className=''>
                         <div className='employee-controls'>
                             <label htmlFor="employee-search">Search by name</label>
@@ -149,6 +176,8 @@ const App = () => {
                                     employee={employee}
                                     onEdit={setEditingEmployee}
                                     onDelete={handleDeleteEmployee}
+                                    isDeleting={isDeleting}
+                                    
                                 />
                             ))}
                         </div>

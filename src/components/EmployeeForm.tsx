@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { FormEvent } from "react";
 import type { Employee } from "../types/employee.types";
 
@@ -34,10 +34,16 @@ const EmployeeForm = ({ onSave, employeeToEdit }: EmployeeFormProps) => {
 
 
     const [error, setError] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
+    const [success, setSuccess] = useState("");
+    const savingRef = useRef(false);
 
 
-    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+
+        if (savingRef.current) return;
+        setSuccess("");
 
         const name = form.name.trim();
         const email = form.email.trim();
@@ -60,9 +66,20 @@ const EmployeeForm = ({ onSave, employeeToEdit }: EmployeeFormProps) => {
             return;
         }
 
-        onSave({ name, email, department, designation, salary });
-        setForm(emptyForm);
+        savingRef.current = true;
+        setIsSaving(true);
         setError("");
+
+        try {
+            await onSave({ name, email, department, designation, salary });
+            setForm(emptyForm);
+            setSuccess("Employee added successfully.");
+        } catch (error: unknown) {
+            setError(error instanceof Error ? error.message : "Could not save employee.");
+        } finally {
+            savingRef.current = false;
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -111,9 +128,10 @@ const EmployeeForm = ({ onSave, employeeToEdit }: EmployeeFormProps) => {
                 />
             </label>
 
-            {error && <p role="alert">{error}</p>}
-            <button type="submit">
-                {employeeToEdit ? "Save Changes" : "Add Employee"}
+            {success && <p role="status">{success}</p>}
+
+            <button type="submit" disabled={isSaving}>
+                {isSaving ? "Saving..." : employeeToEdit ? "Save Changes" : "Add Employee"}
             </button>
         </form>
     );

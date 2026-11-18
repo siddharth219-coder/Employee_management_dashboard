@@ -1,4 +1,4 @@
-import React from 'react'
+import {memo} from 'react'
 import { Employee } from '../types/employee.types'
 
 
@@ -38,4 +38,4 @@ const EmployeeCard = ({ employee, onEdit, onDelete, isDeleting }: EmployeeCardPr
     )
 }
 
-export default EmployeeCard
+export default memo(EmployeeCard)

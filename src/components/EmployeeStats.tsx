@@ -9,10 +9,10 @@ const EmployeeStats = () => {
 
   const totalSalary = useMemo(() => {
     return employees.reduce(
-      (total, employee) => total + employee.salary,
+      (total, employee) => total + Number(employee.salary ?? 0),
       0,
     );
-  }, [employees]);
+  }, [employees]);;
 
   const departmentCounts = useMemo(() => {
     return employees.reduce<Record<string, number>>(

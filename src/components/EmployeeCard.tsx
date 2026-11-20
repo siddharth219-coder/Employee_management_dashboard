@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { Employee } from "../types/employee.types";
 import { useEmployeeContext } from "../hooks/useEmployeeContext";
+import { Link } from "react-router-dom";
 
 interface EmployeeCardProps {
   employee: Employee;
@@ -17,7 +18,11 @@ const EmployeeCard = ({
 
   return (
     <article className="employee-card">
-      <h3>{employee.name}</h3>
+      <h3>
+        <Link to={`/employees/${employee.id}`}>
+          {employee.name}
+        </Link>
+      </h3>
 
       <p>
         <strong>Email:</strong> {employee.email}
@@ -39,12 +44,9 @@ const EmployeeCard = ({
       </p>
 
       <div className="employee-actions">
-        <button
-          type="button"
-          onClick={() => selectEmployee(employee)}
-        >
+        <Link className="edit-link" to={`/employees/edit/${employee.id}`}>
           Edit
-        </button>
+        </Link>
 
         <button
           type="button"

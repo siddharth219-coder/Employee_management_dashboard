@@ -1,6 +1,14 @@
 {
   "employees": [
     {
+      "id": 1,
+      "name": "Aman chopra",
+      "email": "aman@gmail.com",
+      "department": "IT",
+      "designation": "Developer",
+      "salary": 40000
+    },
+    {
       "id": 2,
       "name": "Siddharth Mohanty",
       "email": "siddharthmohanty704@gmail.com",

@@ -11,8 +11,10 @@ const emptyForm = {
     designation: "",
     salary: "",
 };
-
-const EmployeeForm = () => {
+interface EmployeeFormProps {
+    onSuccess?: () => void;
+}
+const EmployeeForm = ({ onSuccess }: EmployeeFormProps) => {
     const {
         state: { selectedEmployee: employeeToEdit },
         saveEmployee,
@@ -72,6 +74,8 @@ const EmployeeForm = () => {
         const wasEditing = Boolean(employeeToEdit);
 
         try {
+            const wasEditing = Boolean(employeeToEdit);
+
             await saveEmployee({
                 name,
                 email,
@@ -87,6 +91,8 @@ const EmployeeForm = () => {
                     ? "Employee updated successfully."
                     : "Employee added successfully.",
             );
+
+            onSuccess?.();
         } catch (error: unknown) {
             setError(
                 error instanceof Error

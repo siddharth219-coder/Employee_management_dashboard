@@ -1,36 +1,58 @@
-import { memo } from "react"
+import { memo, useMemo } from "react";
+import { useEmployeeContext } from "../hooks/useEmployeeContext";
 
-interface EmployeeStatsProps{
-    totalEmployees:number
-    totalSalary:number
-    departmentCounts:Record<string, number>
-}
+const EmployeeStats = () => {
+  const {
+    state: { employees },
+    employeeCount,
+  } = useEmployeeContext();
 
-const EmployeeStats=({
-    totalEmployees,
-    totalSalary,
-    departmentCounts,
-}:EmployeeStatsProps)=>{
-    return(
-        <section className="stats-section" aria-label="Employee statistics">
-            <div className="stats-card">
-                <h2>Total Employees</h2>
-                <p>{totalEmployees}</p>
-            </div>
-            <div className="stats-card">
-                <h2>Total Salary</h2>
-                <p>{totalSalary.toLocaleString("en-IN")}</p>
-            </div>
+  const totalSalary = useMemo(() => {
+    return employees.reduce(
+      (total, employee) => total + employee.salary,
+      0,
+    );
+  }, [employees]);
 
-            {Object.entries(departmentCounts).map(([department, count])=>(
-                <div className="stats-card" key={department}>
-                <h2>{department}</h2>
-                <p>{count}</p>
-            </div>
-            ))}
-            
-        </section>
-    )
-}
+  const departmentCounts = useMemo(() => {
+    return employees.reduce<Record<string, number>>(
+      (counts, employee) => {
+        const department = employee.department;
 
-export default memo(EmployeeStats)
+        counts[department] =
+          (counts[department] ?? 0) + 1;
+
+        return counts;
+      },
+      {},
+    );
+  }, [employees]);
+
+  return (
+    <section
+      className="stats-section"
+      aria-label="Employee statistics"
+    >
+      <div className="stats-card">
+        <h2>Total Employees</h2>
+        <p>{employeeCount}</p>
+      </div>
+
+      <div className="stats-card">
+        <h2>Total Salary</h2>
+        <p>₹{totalSalary.toLocaleString("en-IN")}</p>
+      </div>
+
+      {Object.entries(departmentCounts).map(
+        ([department, count]) => (
+          <div className="stats-card" key={department}>
+            <h2>{department}</h2>
+            <p>{count}</p>
+          </div>
+        ),
+      )}
+    </section>
+  );
+};
+
+export default memo(EmployeeStats);

@@ -1,41 +1,61 @@
-import {memo} from 'react'
-import { Employee } from '../types/employee.types'
-
+import { memo } from "react";
+import type { Employee } from "../types/employee.types";
+import { useEmployeeContext } from "../hooks/useEmployeeContext";
 
 interface EmployeeCardProps {
-    employee: Employee;
-    onEdit: (employee: Employee) => void;
-    onDelete: (id: number) => void
-    isDeleting:boolean
+  employee: Employee;
 }
 
-const EmployeeCard = ({ employee, onEdit, onDelete, isDeleting }: EmployeeCardProps) => {
-    return (
-        <article className='employee-card'>
-            <div className='employee-avatar' aria-hidden="true">
-                {employee.name.charAt(0)}
-            </div>
-            <h2>{employee.name}</h2>
-            <p>{employee.designation}</p>
-            <p>{employee.email}</p>
-            <span>{employee.department}</span>
-            <p>Salary: {employee.salary.toLocaleString("en-IN")}</p>
-            <div className="employee-actions">
-                <button type="button" onClick={() => onEdit(employee)}>
-                    Edit
-                </button>
+const EmployeeCard = ({
+  employee,
+}: EmployeeCardProps) => {
+  const {
+    selectEmployee,
+    removeEmployee,
+    isDeleting,
+  } = useEmployeeContext();
 
-                <button
-                    type="button"
-                    className="delete-button"
-                    disabled={isDeleting}
-                    onClick={() => onDelete(employee.id)}
-                >
-                    Delete
-                </button>
-            </div>
-        </article>
-    )
-}
+  return (
+    <article className="employee-card">
+      <h3>{employee.name}</h3>
 
-export default memo(EmployeeCard)
+      <p>
+        <strong>Email:</strong> {employee.email}
+      </p>
+
+      <p>
+        <strong>Department:</strong>{" "}
+        {employee.department}
+      </p>
+
+      <p>
+        <strong>Designation:</strong>{" "}
+        {employee.designation}
+      </p>
+
+      <p>
+        <strong>Salary:</strong> ₹
+        {employee.salary.toLocaleString("en-IN")}
+      </p>
+
+      <div className="employee-actions">
+        <button
+          type="button"
+          onClick={() => selectEmployee(employee)}
+        >
+          Edit
+        </button>
+
+        <button
+          type="button"
+          disabled={isDeleting}
+          onClick={() => removeEmployee(employee.id)}
+        >
+          {isDeleting ? "Deleting..." : "Delete"}
+        </button>
+      </div>
+    </article>
+  );
+};
+
+export default memo(EmployeeCard);

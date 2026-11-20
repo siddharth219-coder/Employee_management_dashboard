@@ -1,13 +1,8 @@
 import { useRef, useState } from "react";
 import type { FormEvent } from "react";
-import type { Employee } from "../types/employee.types";
+import { useEmployeeContext } from "../hooks/useEmployeeContext";
 
-type EmployeeFormData = Omit<Employee, "id">;
 
-interface EmployeeFormProps {
-    onSave: (employee: EmployeeFormData) => void;
-    employeeToEdit?: Employee | null;
-}
 
 const emptyForm = {
     name: "",
@@ -17,7 +12,11 @@ const emptyForm = {
     salary: "",
 };
 
-const EmployeeForm = ({ onSave, employeeToEdit }: EmployeeFormProps) => {
+const EmployeeForm = () => {
+    const {
+        state: { selectedEmployee: employeeToEdit },
+        saveEmployee,
+    } = useEmployeeContext()
     const [form, setForm] = useState(() =>
         employeeToEdit
             ? {
@@ -70,12 +69,30 @@ const EmployeeForm = ({ onSave, employeeToEdit }: EmployeeFormProps) => {
         setIsSaving(true);
         setError("");
 
+        const wasEditing = Boolean(employeeToEdit);
+
         try {
-            await onSave({ name, email, department, designation, salary });
+            await saveEmployee({
+                name,
+                email,
+                department,
+                designation,
+                salary,
+            });
+
             setForm(emptyForm);
-            setSuccess("Employee added successfully.");
+
+            setSuccess(
+                wasEditing
+                    ? "Employee updated successfully."
+                    : "Employee added successfully.",
+            );
         } catch (error: unknown) {
-            setError(error instanceof Error ? error.message : "Could not save employee.");
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : "Could not save employee.",
+            );
         } finally {
             savingRef.current = false;
             setIsSaving(false);
@@ -127,6 +144,10 @@ const EmployeeForm = ({ onSave, employeeToEdit }: EmployeeFormProps) => {
                     onChange={(e) => setForm({ ...form, salary: e.target.value })}
                 />
             </label>
+
+            {error && <p role="alert">{error}</p>}
+
+            {success && <p role="status">{success}</p>}
 
             {success && <p role="status">{success}</p>}
 

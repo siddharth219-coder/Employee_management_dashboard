@@ -1,26 +1,48 @@
-import {memo} from 'react'
+import { memo, useMemo } from "react";
+import { useEmployeeContext } from "../hooks/useEmployeeContext";
+import { useSettings } from "../hooks/useSettings";
 
-interface DepartmentFilterProps{
-    departments: string[]
-    selectedDepartment:string
-    onDepartmentChange:(department: string)=>void
-}
+const DepartmentFilter = () => {
+  const {
+    state: { employees },
+  } = useEmployeeContext();
 
-const DepartmentFilter = ({departments,selectedDepartment,onDepartmentChange}:DepartmentFilterProps) => {
+  const {
+    selectedDepartment,
+    setSelectedDepartment,
+  } = useSettings();
+
+  const departments = useMemo(() => {
+    return Array.from(
+      new Set(
+        employees.map((employee) => employee.department),
+      ),
+    ).sort();
+  }, [employees]);
+
   return (
-    <div className='employee-controls'>
-        <label htmlFor="department-filter">Department</label>
+    <div className="employee-controls">
+      <label htmlFor="department-filter">
+        Department
+      </label>
 
-        <select id="department-filter" value={selectedDepartment} onChange={(event)=> onDepartmentChange(event.target.value)}>
-            <option value="">All Departments</option>
-            {departments.map((department)=>(
-                <option value={department} key={department}>
-                    {department}
-                </option>
-            ))}
-        </select>
+      <select
+        id="department-filter"
+        value={selectedDepartment}
+        onChange={(event) =>
+          setSelectedDepartment(event.target.value)
+        }
+      >
+        <option value="">All Departments</option>
+
+        {departments.map((department) => (
+          <option value={department} key={department}>
+            {department}
+          </option>
+        ))}
+      </select>
     </div>
-  )
-}
+  );
+};
 
-export default memo(DepartmentFilter)
+export default memo(DepartmentFilter);

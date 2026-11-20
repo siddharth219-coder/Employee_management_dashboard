@@ -1,8 +1,10 @@
 # Employee Management Dashboard
 
-A responsive and performance-optimized Employee Management Dashboard built with React and TypeScript. It supports employee CRUD operations through a JSON Server mock REST API.
+A responsive Employee Management Dashboard built with React and TypeScript. It supports complete employee CRUD operations using a JSON Server mock API.
 
-The application was tested using 1,000 employee records to observe rendering performance and optimize expensive calculations.
+The application uses Context API and `useReducer` for centralized employee state management. It also includes global theme, department filter and card/table view preferences.
+
+The dashboard has been tested using 1,000 employee records and optimized using `useMemo`, `useCallback`, `useRef` and `React.memo`.
 
 ## Features
 
@@ -16,15 +18,21 @@ The application was tested using 1,000 employee records to observe rendering per
 - Display total employee count
 - Calculate total employee salary
 - Display department-wise employee counts
-- Controlled employee form with validation
+- Controlled employee form
+- Form validation and validation messages
 - Loading, success and error states
 - Retry failed API requests
 - Prevent duplicate form submissions
 - Prevent duplicate deletion requests
-- Automatically focus the search input
-- Responsive desktop and mobile design
-- Reusable and properly typed React components
-- Performance optimization for 1,000 employee records
+- Light and Dark themes
+- Card and Table views
+- Responsive desktop and mobile layout
+- Support for 1,000 employee records
+- Centralized employee state using Context API
+- Typed reducer actions using TypeScript
+- Separate context for application settings
+- Reusable custom context hooks
+- Performance optimization and Profiler analysis
 
 ## Technologies Used
 
@@ -36,6 +44,14 @@ The application was tested using 1,000 employee records to observe rendering per
 - Vite
 - JSON Server
 - Fetch API
+- Context API
+- `useReducer`
+- `useState`
+- `useEffect`
+- `useRef`
+- `useMemo`
+- `useCallback`
+- `React.memo`
 - React Developer Tools Profiler
 
 ## Project Structure
@@ -48,26 +64,44 @@ src/
 │   ├── EmployeeForm.tsx
 │   ├── EmployeeList.tsx
 │   ├── EmployeeStats.tsx
+│   ├── Header.tsx
 │   └── SearchBar.tsx
+│
+├── context/
+│   ├── EmployeeContext.tsx
+│   └── SettingsContext.tsx
+│
 ├── hooks/
-│   └── useEmployees.ts
+│   ├── useEmployeeContext.ts
+│   └── useSettings.ts
+│
+├── reducers/
+│   └── employeeReducer.ts
+│
 ├── services/
 │   └── employeeService.ts
+│
 ├── screenshots/
 │   ├── desktop.png
 │   ├── mobile.png
 │   ├── api-error.png
 │   ├── profiler-before.png
 │   ├── profiler-after.png
-│   └── large-dataset.png
+│   ├── large-dataset.png
+│   ├── context-light-card.png
+│   ├── context-dark-table.png
+│   └── context-edit-state.png
+│
 ├── types/
 │   └── employee.types.ts
+│
 ├── App.tsx
 ├── index.css
 └── main.tsx
 
 db.json
 generateEmployees.cjs
+README.md
 ```
 
 ## Installation
@@ -75,7 +109,7 @@ generateEmployees.cjs
 Clone the repository:
 
 ```bash
-git clone (https://github.com/siddharth219-coder/Employee_management_dashboard.git)
+git clone https://github.com/USERNAME/REPOSITORY.git
 ```
 
 Enter the project folder:
@@ -124,7 +158,7 @@ http://localhost:5173
 
 ## Production Build
 
-Create a production build with:
+Create the production build with:
 
 ```bash
 npm run build
@@ -132,24 +166,9 @@ npm run build
 
 The generated production files will be stored in the `dist` folder.
 
-## API Operations
+## Employee Interface
 
-| Operation | HTTP Method | Endpoint |
-|---|---|---|
-| Fetch employees | GET | `/employees` |
-| Add an employee | POST | `/employees` |
-| Update an employee | PATCH | `/employees/:id` |
-| Delete an employee | DELETE | `/employees/:id` |
-
-The API base URL is:
-
-```text
-http://localhost:3001
-```
-
-## TypeScript Implementation
-
-The application uses an `Employee` interface consistently:
+The application uses a strongly typed `Employee` interface:
 
 ```ts
 interface Employee {
@@ -166,29 +185,272 @@ TypeScript is used for:
 
 - Employee data
 - Component props
-- State variables
+- Context values
+- Reducer state
+- Reducer actions
 - Callback functions
 - Form data
-- Asynchronous functions
 - API responses
+- Asynchronous functions
 - Error handling
 
 The application avoids using `any`.
 
-## Custom Hook
+## API Operations
 
-The `useEmployees()` custom hook is responsible for:
+| Operation | HTTP Method | Endpoint |
+|---|---|---|
+| Fetch employees | GET | `/employees` |
+| Add employee | POST | `/employees` |
+| Update employee | PATCH | `/employees/:id` |
+| Delete employee | DELETE | `/employees/:id` |
+
+The API base URL is:
+
+```text
+http://localhost:3001
+```
+
+## State Management Architecture
+
+The application uses two separate contexts:
+
+1. `EmployeeContext`
+2. `SettingsContext`
+
+Keeping unrelated contexts separate helps make the state easier to understand and prevents employee state from becoming mixed with UI preferences.
+
+### Application Flow
+
+```text
+Components
+    ↓
+Custom Context Hooks
+    ↓
+Context Providers
+    ↓
+Reducer / Settings State
+    ↓
+API Service
+    ↓
+JSON Server
+```
+
+## Employee Context
+
+`EmployeeContext` manages shared employee-related state and operations.
+
+It provides:
+
+- Employee list
+- Selected employee
+- Employee count
+- Loading state
+- Delete loading state
+- API errors
+- Retry functionality
+- Save employee function
+- Delete employee function
+- Select employee function
+- Reducer dispatch
+
+Components access this context using:
+
+```ts
+const employeeContext = useEmployeeContext();
+```
+
+This avoids passing employee state and CRUD callbacks through multiple component levels.
+
+## Employee Reducer
+
+The employee reducer manages employee state using pure and immutable updates.
+
+### Employee State
+
+```ts
+interface EmployeeState {
+  employees: Employee[];
+  selectedEmployee: Employee | null;
+}
+```
+
+### Reducer Actions
+
+The reducer supports:
+
+- `SET_EMPLOYEES`
+- `ADD_EMPLOYEE`
+- `UPDATE_EMPLOYEE`
+- `DELETE_EMPLOYEE`
+- `SELECT_EMPLOYEE`
+
+The actions are defined using a TypeScript discriminated union:
+
+```ts
+type EmployeeAction =
+  | {
+      type: "SET_EMPLOYEES";
+      payload: Employee[];
+    }
+  | {
+      type: "ADD_EMPLOYEE";
+      payload: Employee;
+    }
+  | {
+      type: "UPDATE_EMPLOYEE";
+      payload: Employee;
+    }
+  | {
+      type: "DELETE_EMPLOYEE";
+      payload: number;
+    }
+  | {
+      type: "SELECT_EMPLOYEE";
+      payload: Employee | null;
+    };
+```
+
+The reducer does not mutate the existing state. It returns new arrays and objects.
+
+Examples:
+
+```ts
+employees: [...state.employees, action.payload]
+```
+
+```ts
+employees: state.employees.map(/* update employee */)
+```
+
+```ts
+employees: state.employees.filter(/* remove employee */)
+```
+
+## Settings Context
+
+`SettingsContext` manages shared application preferences:
+
+- Light or Dark theme
+- Selected department
+- Card or Table view
+
+Components access these preferences using:
+
+```ts
+const settings = useSettings();
+```
+
+The settings are kept separate from employee state because they are UI preferences and do not belong in the employee reducer.
+
+## Custom Context Hooks
+
+### useEmployeeContext
+
+`useEmployeeContext()` provides employee state and operations.
+
+It throws a meaningful error when used outside `EmployeeProvider`:
+
+```ts
+throw new Error(
+  "useEmployeeContext must be used inside an EmployeeProvider.",
+);
+```
+
+### useSettings
+
+`useSettings()` provides global application preferences.
+
+It throws a meaningful error when used outside `SettingsProvider`:
+
+```ts
+throw new Error(
+  "useSettings must be used inside a SettingsProvider.",
+);
+```
+
+## Provider Setup
+
+The providers wrap the application in `main.tsx`:
+
+```tsx
+<StrictMode>
+  <SettingsProvider>
+    <EmployeeProvider>
+      <App />
+    </EmployeeProvider>
+  </SettingsProvider>
+</StrictMode>
+```
+
+This allows child components to access both contexts through their custom hooks.
+
+## Local State vs Global State
+
+Not every value is stored in Context.
+
+### Global Employee State
+
+The following values are global because multiple components need them:
+
+- Employee list
+- Selected employee
+- Employee count
+- Employee API operations
+- Employee API states
+
+### Global Settings State
+
+The following preferences are global:
+
+- Theme
+- Department filter
+- View mode
+
+### Local Component State
+
+The following values remain local because they are used only by specific components:
+
+- Search input
+- Employee form fields
+- Form validation errors
+- Form saving state
+- Form success message
+
+This prevents unnecessary global state and keeps components easier to maintain.
+
+## API Integration
+
+The employee API service is separated from UI components.
+
+The service contains functions for:
 
 - Fetching employees
-- Storing employee data
-- Managing the loading state
-- Managing API errors
-- Providing Retry functionality
-- Cancelling obsolete fetch requests
+- Creating employees
+- Updating employees
+- Deleting employees
 
-`AbortController` is used in the effect cleanup to prevent an obsolete request from updating the application after the component unmounts.
+The Context Provider calls the service functions and dispatches reducer actions after successful API responses.
 
-## Error Handling
+Example flow:
+
+```text
+EmployeeForm
+    ↓
+saveEmployee()
+    ↓
+employeeService
+    ↓
+JSON Server
+    ↓
+Reducer action
+    ↓
+Updated employee state
+    ↓
+UI re-render
+```
+
+## Loading and Error Handling
 
 The application handles failed API requests for:
 
@@ -197,82 +459,111 @@ The application handles failed API requests for:
 - Updating employees
 - Deleting employees
 
-When the initial request fails, an error message and Retry button are displayed.
+When the initial fetch fails, the application displays an error message and Retry button.
 
-Unknown errors are narrowed safely using:
+Unknown errors are narrowed safely:
 
 ```ts
 error instanceof Error
 ```
 
+`AbortController` is used to cancel obsolete employee-fetching requests when the Provider unmounts or the request is replaced.
+
 ## Duplicate Request Prevention
 
-The employee form disables its submit button while an API request is running.
+The employee form prevents duplicate submissions by:
 
-A ref is also used to prevent immediate duplicate requests before the component has re-rendered.
+- Disabling the submit button while saving
+- Storing the immediate saving status in a ref
 
-The Delete button is disabled while deletion is in progress to prevent duplicate deletion requests.
+Employee deletion prevents duplicate requests by:
+
+- Disabling Delete buttons while deleting
+- Tracking the deletion request using a ref
+
+## Search and Filtering
+
+Search and department filtering work together.
+
+An employee is displayed only when:
+
+- The name matches the search text
+- The department matches the selected department
+
+Filtering happens locally and does not make unnecessary API calls.
+
+## Theme Preference
+
+The Header provides a Light/Dark mode button.
+
+The selected theme is stored inside `SettingsContext` and applied to the document:
+
+```ts
+document.documentElement.dataset.theme = theme;
+```
+
+Different components respond to the global theme using CSS selectors.
+
+## Card and Table Views
+
+The Header provides a Card/Table view button.
+
+The selected view is stored inside `SettingsContext`.
+
+`EmployeeList` reads the global preference and displays either:
+
+- Reusable employee cards
+- A responsive employee table
 
 ## Performance Optimizations
 
-The application was tested with 1,000 employee records to identify expensive calculations and unnecessary component re-renders.
+The application was tested with 1,000 employee records.
 
 ### useRef
 
 `useRef` is used to:
 
-- Automatically focus the employee search input after API loading finishes
-- Store a reference to the employee form section
-- Scroll to the form when an employee is selected for editing
-- Track the number of App renders
-- Store mutable values without causing re-renders
+- Automatically focus the search input
+- Store the employee form section reference
+- Scroll to the form during editing
+- Track component renders
+- Prevent duplicate submissions
 - Prevent duplicate deletion requests
 
-Changing a ref does not cause a component to re-render because React does not use ref values to generate the user interface.
+Changing a ref does not cause a component to re-render.
 
 ### useMemo
 
 `useMemo` is used for:
 
-- Searching employees by name
-- Filtering employees by department
-- Calculating total employee salary
-- Calculating department-wise employee counts
-- Creating a stable department array
+- Searching employees
+- Filtering employees
+- Calculating total salary
+- Calculating department counts
+- Creating department lists
 
-These values are recalculated only when their required dependencies change.
+These calculations run again only when their dependencies change.
 
 ### useCallback
 
-`useCallback` provides stable function references for:
+`useCallback` is used for:
 
-- Adding an employee
-- Updating an employee
-- Deleting an employee
-- Selecting an employee for editing
-- Updating the search value
-- Updating the department filter
-
-Stable callbacks are useful when functions are passed to memoized child components.
+- Stable search callbacks
+- Theme changes
+- Employee selection
+- Save operations
+- Delete operations
+- Retry functionality
 
 ### React.memo
 
-`React.memo` is applied to appropriate components:
+`React.memo` is used on suitable reusable components to avoid unnecessary rendering when their props have not changed.
 
-- `EmployeeCard`
-- `EmployeeList`
-- `DepartmentFilter`
-- `EmployeeStats`
-
-It performs a shallow comparison of props and can prevent a component from rendering when its props have not changed.
-
-`React.memo` does not prevent every render. A component still renders when its props, state or consumed context change.
+Memoization is not used everywhere because it also has a processing and memory cost.
 
 ## Large Employee Dataset
 
-The project includes a script that generates at least 1,000 employees for performance testing.
-
-Run:
+Generate at least 1,000 employees with:
 
 ```bash
 node generateEmployees.cjs
@@ -284,53 +575,48 @@ Expected output:
 1000 employees generated successfully.
 ```
 
-After generating the data, restart JSON Server.
+Restart JSON Server after generating the data.
 
 ## Performance Observations
 
 ### Before Optimization
 
-Before optimization, an update in `App` caused multiple child components and employee cards to render again.
+Before optimization, updates in `App` caused multiple child components and employee cards to render again.
 
-The initial Profiler recording showed:
-
-- `App` and multiple child components rendering
-- Approximately 27 recorded commits
-- A selected render duration of approximately 9.4 ms
-- A small employee dataset was used
+The initial Profiler recording used a small employee dataset.
 
 ### After Optimization
 
 After optimization:
 
-- Employee statistics avoid rendering when only the search value changes
-- Department controls avoid unrelated renders
-- Expensive calculations run only when their dependencies change
-- Stable callbacks work with `React.memo`
-- Unchanged employee cards can avoid unnecessary rendering
-- The application supports searching and filtering 1,000 records
+- Statistics avoid unrelated rendering
+- Expensive calculations depend on correct dependencies
+- Stable callbacks support memoized components
+- Unchanged child components can avoid rendering
+- Search and filtering support 1,000 records
+- `EmployeeList` remains the most expensive component because it can render many records
 
-The optimized Profiler recording with 1,000 employees showed:
+For a production application, pagination or list virtualization would be the next performance improvement.
 
-- Total selected render: approximately 84.2 ms
-- `App`: approximately 3.5 ms
-- `EmployeeList`: approximately 78.1 ms
+## Testing Checklist
 
-`EmployeeList` was identified as the most expensive component because it can render up to 1,000 employee cards.
+The following behavior was verified:
 
-For a production application, pagination or list virtualization would be the next optimization.
-
-The before-and-after durations are not directly compared because the original recording used a small dataset while the optimized recording used 1,000 records.
-
-## Why Memoization Was Not Used Everywhere
-
-Memoization also has a processing and memory cost. It was applied only where:
-
-- A calculation can become expensive with a large dataset
-- Stable references help memoized child components
-- A component can avoid meaningful unnecessary rendering
-
-Simple values and inexpensive operations were not memoized unnecessarily.
+- Adding an employee updates centralized state
+- Editing updates the correct employee
+- Editing does not create a duplicate employee
+- Deleting removes the correct employee
+- Employee count updates automatically
+- Selected employee fills the edit form
+- Selected employee clears after updating or deleting
+- Search works
+- Department filtering works
+- Search and filtering work together
+- Theme changes across the application
+- Card and Table views work
+- Retry works after an API failure
+- Custom hooks throw errors outside their Providers
+- The production build completes successfully
 
 ## Screenshots
 
@@ -354,15 +640,23 @@ Simple values and inexpensive operations were not memoized unnecessarily.
 
 ![Profiler after optimization](src/screenshots/profiler-after.png)
 
-### Dashboard with 1,000 Employees
+### Large Dataset
 
 ![Dashboard with 1000 employees](src/screenshots/large-dataset.png)
+
+### Context Light Card View
+
+![Context light card view](src/screenshots/context-light-card.png)
+
+### Context Dark Table View
+
+![Context dark table view](src/screenshots/context-dark-table.png)
 
 ## Mock API Limitation
 
 This project uses JSON Server as a mock REST API.
 
-The data is stored locally in `db.json`, so JSON Server must be running for API operations to work.
+Data is stored locally inside `db.json`, so JSON Server must be running for API operations to work.
 
 JSON Server is intended for development and demonstration. A production application would use a real backend API and database.
 
@@ -370,11 +664,12 @@ JSON Server is intended for development and demonstration. A production applicat
 
 - Add pagination
 - Add list virtualization
+- Persist theme preference in local storage
 - Add sorting
-- Add automated component tests
-- Add API request caching
-- Add employee details pages
+- Add automated component and reducer tests
+- Add API caching
 - Add authentication and authorization
+- Add employee details pages
 
 ## Author
 

@@ -1,44 +1,61 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
 import EmployeeList from "../components/EmployeeList";
 import SearchBar from "../components/SearchBar";
-import { useEmployeeContext } from "../hooks/useEmployeeContext";
-import { useSettings } from "../hooks/useSettings";
+import { selectDepartments, selectSearchTerm, selectSelectedDepartment } from "../features/employees/employeeSelectors";
+import { setSearchTerm, setSelectedDepartment } from "../features/employees/employeeSlice";
 
 const Employees = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const dispatch = useAppDispatch();
 
-  const {
-    state: { employees },
-  } = useEmployeeContext();
+  const [searchParams, setSearchParams] =
+    useSearchParams();
 
-  const {
-    selectedDepartment,
-    setSelectedDepartment,
-  } = useSettings();
+  const searchTerm = useAppSelector(
+    selectSearchTerm,
+  );
 
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const selectedDepartment = useAppSelector(
+    selectSelectedDepartment,
+  );
 
-  const search = searchParams.get("search") ?? "";
+  const departments = useAppSelector(
+    selectDepartments,
+  );
+
+  const searchInputRef =
+    useRef<HTMLInputElement>(null);
+
+  const searchFromUrl =
+    searchParams.get("search") ?? "";
+
   const departmentFromUrl =
     searchParams.get("department") ?? "";
 
-  const departments = useMemo(() => {
-    return Array.from(
-      new Set(employees.map((employee) => employee.department)),
-    );
-  }, [employees]);
-
   useEffect(() => {
-    setSelectedDepartment(departmentFromUrl);
-  }, [departmentFromUrl, setSelectedDepartment]);
+    dispatch(setSearchTerm(searchFromUrl));
+
+    dispatch(
+      setSelectedDepartment(departmentFromUrl),
+    );
+  }, [
+    dispatch,
+    searchFromUrl,
+    departmentFromUrl,
+  ]);
 
   useEffect(() => {
     searchInputRef.current?.focus();
   }, []);
 
-  const handleSearchChange = (value: string): void => {
-    const updatedParams = new URLSearchParams(searchParams);
+  const handleSearchChange = (
+    value: string,
+  ): void => {
+    dispatch(setSearchTerm(value));
+
+    const updatedParams =
+      new URLSearchParams(searchParams);
 
     if (value.trim()) {
       updatedParams.set("search", value);
@@ -49,13 +66,19 @@ const Employees = () => {
     setSearchParams(updatedParams);
   };
 
-  const handleDepartmentChange = (department: string): void => {
-    const updatedParams = new URLSearchParams(searchParams);
+  const handleDepartmentChange = (
+    department: string,
+  ): void => {
+    dispatch(setSelectedDepartment(department));
 
-    setSelectedDepartment(department);
+    const updatedParams =
+      new URLSearchParams(searchParams);
 
     if (department) {
-      updatedParams.set("department", department);
+      updatedParams.set(
+        "department",
+        department,
+      );
     } else {
       updatedParams.delete("department");
     }
@@ -64,12 +87,14 @@ const Employees = () => {
   };
 
   return (
-    <section id="employees" className="employees">
-
+    <section
+      id="employees"
+      className="employees"
+    >
       <div className="employee-controls-container">
         <SearchBar
           ref={searchInputRef}
-          search={search}
+          search={searchTerm}
           onSearchChange={handleSearchChange}
         />
 
@@ -82,13 +107,20 @@ const Employees = () => {
             id="department-filter"
             value={selectedDepartment}
             onChange={(event) =>
-              handleDepartmentChange(event.target.value)
+              handleDepartmentChange(
+                event.target.value,
+              )
             }
           >
-            <option value="">All Departments</option>
+            <option value="">
+              All Departments
+            </option>
 
             {departments.map((department) => (
-              <option key={department} value={department}>
+              <option
+                key={department}
+                value={department}
+              >
                 {department}
               </option>
             ))}
@@ -96,7 +128,7 @@ const Employees = () => {
         </div>
       </div>
 
-      <EmployeeList search={search} />
+      <EmployeeList />
     </section>
   );
 };

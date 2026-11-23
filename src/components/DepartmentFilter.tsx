@@ -1,36 +1,23 @@
-import { memo, useMemo } from "react";
-import { useEmployeeContext } from "../hooks/useEmployeeContext";
-import { useSettings } from "../hooks/useSettings";
+import { memo } from "react";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+import { selectDepartments, selectSelectedDepartment } from "../features/employees/employeeSelectors";
+import { setSelectedDepartment } from "../features/employees/employeeSlice";
 
 const DepartmentFilter = () => {
-  const {
-    state: { employees },
-  } = useEmployeeContext();
+  const dispatch = useAppDispatch();
 
-  const {
-    selectedDepartment,
-    setSelectedDepartment,
-  } = useSettings();
-
-  const departments = useMemo(() => {
-    return Array.from(
-      new Set(
-        employees.map((employee) => employee.department),
-      ),
-    ).sort();
-  }, [employees]);
+  const departments = useAppSelector(selectDepartments);
+  const selectedDepartment = useAppSelector(selectSelectedDepartment);
 
   return (
     <div className="employee-controls">
-      <label htmlFor="department-filter">
-        Department
-      </label>
+      <label htmlFor="department-filter">Department</label>
 
       <select
         id="department-filter"
         value={selectedDepartment}
         onChange={(event) =>
-          setSelectedDepartment(event.target.value)
+          dispatch(setSelectedDepartment(event.target.value))
         }
       >
         <option value="">All Departments</option>

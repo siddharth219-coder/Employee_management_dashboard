@@ -1,9 +1,10 @@
-import {
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useSettings } from "../hooks/useSettings";
+import { MdOutlineGridView } from "react-icons/md";
+import { CiViewTable } from "react-icons/ci";
+import { FiSun } from "react-icons/fi";
+import { IoMoon } from "react-icons/io5";
 
 const Header = () => {
   const {
@@ -74,11 +75,11 @@ const Header = () => {
 
       <div className="header-actions">
         <button type="button" onClick={toggleTheme}>
-          {theme === "light" ? "Dark" : "Light"} Mode
+          {theme === "light"  ? <IoMoon size={20}/> :  <FiSun size={20}/> }
         </button>
 
         <button type="button" onClick={toggleViewMode}>
-          {viewMode === "card" ? "Table" : "Card"} View
+          {viewMode === "card" ? <CiViewTable size={20}/> : <MdOutlineGridView size={20}/>}
         </button>
 
         <button

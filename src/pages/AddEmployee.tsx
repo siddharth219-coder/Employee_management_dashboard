@@ -1,30 +1,40 @@
-import React, { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useEmployeeContext } from '../hooks/useEmployeeContext'
-import EmployeeForm from '../components/EmployeeForm'
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+import EmployeeForm from "../components/EmployeeForm";
+import { selectSelectedEmployee } from "../features/employees/employeeSelectors";
+import { selectEmployee } from "../features/employees/employeeSlice";
 
 const AddEmployee = () => {
+    const dispatch = useAppDispatch();
+    const navigate = useNavigate();
 
-    const navigate=useNavigate()
+    const selectedEmployee = useAppSelector(
+        selectSelectedEmployee,
+    );
 
-    const{
-        state:{selectedEmployee},
-        selectEmployee,
-    }= useEmployeeContext()
-
-    useEffect(()=>{
-        selectEmployee(null)
-    },[selectEmployee])
+    useEffect(() => {
+        dispatch(selectEmployee(null));
+    }, [dispatch]);
 
     if (selectedEmployee) {
-        return <p role='status'> Preparing employee form...</p>
+        return (
+            <p role="status">
+                Preparing employee form...
+            </p>
+        );
     }
 
-  return (
-    <section>
-        <EmployeeForm onSuccess={()=> navigate("/employees")}/>
-    </section>
-  )
-}
+    return (
+        <section>
+            <EmployeeForm
+                key="add"
+                onSuccess={() =>
+                    navigate("/employees")
+                }
+            />
+        </section>
+    );
+};
 
-export default AddEmployee
+export default AddEmployee;

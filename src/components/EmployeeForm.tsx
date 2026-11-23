@@ -1,119 +1,184 @@
-import { useRef, useState } from "react";
-import type { FormEvent } from "react";
-import { useEmployeeContext } from "../hooks/useEmployeeContext";
+import { useRef, useState, type FormEvent } from "react";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+import { selectEmployeeError, selectEmployeeLoading, selectSelectedEmployee } from "../features/employees/employeeSelectors";
+import { clearEmployeeError, selectEmployee } from "../features/employees/employeeSlice";
+import { addEmployeeThunk, updateEmployeeThunk } from "../features/employees/employeeThunks";
 
+interface EmployeeFormProps {
+    onSuccess?: () => void;
+}
 
+interface FormState {
+    name: string;
+    email: string;
+    department: string;
+    designation: string;
+    salary: string;
+}
 
-const emptyForm = {
+const emptyForm: FormState = {
     name: "",
     email: "",
     department: "",
     designation: "",
     salary: "",
 };
-interface EmployeeFormProps {
-    onSuccess?: () => void;
-}
-const EmployeeForm = ({ onSuccess }: EmployeeFormProps) => {
-    const {
-        state: { selectedEmployee: employeeToEdit },
-        saveEmployee,
-    } = useEmployeeContext()
-    const [form, setForm] = useState(() =>
-        employeeToEdit
-            ? {
-                name: employeeToEdit.name,
-                email: employeeToEdit.email,
-                department: employeeToEdit.department,
-                designation: employeeToEdit.designation,
-                salary: String(employeeToEdit.salary),
-            }
-            : emptyForm,
+
+const EmployeeForm = ({
+    onSuccess,
+}: EmployeeFormProps) => {
+    const dispatch = useAppDispatch();
+
+    const employeeToEdit = useAppSelector(
+        selectSelectedEmployee,
     );
 
+    const loading = useAppSelector(
+        selectEmployeeLoading,
+    );
 
+    const apiError = useAppSelector(
+        selectEmployeeError,
+    );
 
+    const [form, setForm] = useState<FormState>(
+        () =>
+            employeeToEdit
+                ? {
+                    name: employeeToEdit.name,
+                    email: employeeToEdit.email,
+                    department:
+                        employeeToEdit.department,
+                    designation:
+                        employeeToEdit.designation,
+                    salary: String(
+                        employeeToEdit.salary,
+                    ),
+                }
+                : emptyForm,
+    );
 
-    const [error, setError] = useState("");
-    const [isSaving, setIsSaving] = useState(false);
-    const [success, setSuccess] = useState("");
+    const [validationError, setValidationError] =
+        useState("");
+
     const savingRef = useRef(false);
 
-
-    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (
+        event: FormEvent<HTMLFormElement>,
+    ): Promise<void> => {
         event.preventDefault();
 
-        if (savingRef.current) return;
-        setSuccess("");
+        if (savingRef.current) {
+            return;
+        }
 
         const name = form.name.trim();
         const email = form.email.trim();
         const department = form.department.trim();
-        const designation = form.designation.trim();
+        const designation =
+            form.designation.trim();
         const salary = Number(form.salary);
 
-        if (!name || !email || !department || !designation || !form.salary.trim()) {
-            setError("Please fill in all fields.");
+        if (
+            !name ||
+            !email ||
+            !department ||
+            !designation ||
+            !form.salary.trim()
+        ) {
+            setValidationError(
+                "Please fill in all fields.",
+            );
             return;
         }
 
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            setError("Enter a valid email address.");
+        const emailPattern =
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailPattern.test(email)) {
+            setValidationError(
+                "Enter a valid email address.",
+            );
             return;
         }
 
-        if (!Number.isFinite(salary) || salary <= 0) {
-            setError("Salary must be greater than zero.");
+        if (
+            !Number.isFinite(salary) ||
+            salary <= 0
+        ) {
+            setValidationError(
+                "Salary must be greater than zero.",
+            );
             return;
         }
 
         savingRef.current = true;
-        setIsSaving(true);
-        setError("");
+        setValidationError("");
+        dispatch(clearEmployeeError());
 
-        const wasEditing = Boolean(employeeToEdit);
+        const details = {
+            name,
+            email,
+            department,
+            designation,
+            salary,
+        };
 
         try {
-            const wasEditing = Boolean(employeeToEdit);
-
-            await saveEmployee({
-                name,
-                email,
-                department,
-                designation,
-                salary,
-            });
+            if (employeeToEdit) {
+                await dispatch(
+                    updateEmployeeThunk({
+                        id: employeeToEdit.id,
+                        details,
+                    }),
+                ).unwrap();
+            } else {
+                await dispatch(
+                    addEmployeeThunk(details),
+                ).unwrap();
+            }
 
             setForm(emptyForm);
-
-            setSuccess(
-                wasEditing
-                    ? "Employee updated successfully."
-                    : "Employee added successfully.",
-            );
-
+            dispatch(selectEmployee(null));
             onSuccess?.();
-        } catch (error: unknown) {
-            setError(
-                error instanceof Error
-                    ? error.message
-                    : "Could not save employee.",
-            );
+        } catch {
+            // Redux stores the API error.
         } finally {
             savingRef.current = false;
-            setIsSaving(false);
+        }
+    };
+
+    const clearErrors = (): void => {
+        setValidationError("");
+
+        if (apiError) {
+            dispatch(clearEmployeeError());
         }
     };
 
     return (
-        <form className="employee-form" onSubmit={handleSubmit} noValidate>
-            <h2>{employeeToEdit ? "Edit Employee" : "Add Employee"}</h2>
+        <form
+            className="employee-form"
+            onSubmit={handleSubmit}
+            noValidate
+        >
+            <h2>
+                {employeeToEdit
+                    ? "Edit Employee"
+                    : "Add Employee"}
+            </h2>
 
             <label>
                 Employee Name
                 <input
                     value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    onChange={(event) => {
+                        setForm({
+                            ...form,
+                            name: event.target.value,
+                        });
+                        clearErrors();
+                    }}
                 />
             </label>
 
@@ -122,7 +187,13 @@ const EmployeeForm = ({ onSuccess }: EmployeeFormProps) => {
                 <input
                     type="email"
                     value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    onChange={(event) => {
+                        setForm({
+                            ...form,
+                            email: event.target.value,
+                        });
+                        clearErrors();
+                    }}
                 />
             </label>
 
@@ -130,7 +201,13 @@ const EmployeeForm = ({ onSuccess }: EmployeeFormProps) => {
                 Department
                 <input
                     value={form.department}
-                    onChange={(e) => setForm({ ...form, department: e.target.value })}
+                    onChange={(event) => {
+                        setForm({
+                            ...form,
+                            department: event.target.value,
+                        });
+                        clearErrors();
+                    }}
                 />
             </label>
 
@@ -138,7 +215,14 @@ const EmployeeForm = ({ onSuccess }: EmployeeFormProps) => {
                 Designation
                 <input
                     value={form.designation}
-                    onChange={(e) => setForm({ ...form, designation: e.target.value })}
+                    onChange={(event) => {
+                        setForm({
+                            ...form,
+                            designation:
+                                event.target.value,
+                        });
+                        clearErrors();
+                    }}
                 />
             </label>
 
@@ -146,19 +230,39 @@ const EmployeeForm = ({ onSuccess }: EmployeeFormProps) => {
                 Salary
                 <input
                     type="number"
+                    min="1"
                     value={form.salary}
-                    onChange={(e) => setForm({ ...form, salary: e.target.value })}
+                    onChange={(event) => {
+                        setForm({
+                            ...form,
+                            salary: event.target.value,
+                        });
+                        clearErrors();
+                    }}
                 />
             </label>
 
-            {error && <p role="alert">{error}</p>}
+            {validationError && (
+                <p role="alert">
+                    {validationError}
+                </p>
+            )}
 
-            {success && <p role="status">{success}</p>}
+            {apiError && (
+                <p role="alert">
+                    {apiError}
+                </p>
+            )}
 
-            {success && <p role="status">{success}</p>}
-
-            <button type="submit" disabled={isSaving}>
-                {isSaving ? "Saving..." : employeeToEdit ? "Save Changes" : "Add Employee"}
+            <button
+                type="submit"
+                disabled={loading}
+            >
+                {loading
+                    ? "Saving..."
+                    : employeeToEdit
+                        ? "Save Changes"
+                        : "Add Employee"}
             </button>
         </form>
     );

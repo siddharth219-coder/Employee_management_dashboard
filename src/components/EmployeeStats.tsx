@@ -1,32 +1,43 @@
-import { memo, useMemo } from "react";
-import { useEmployeeContext } from "../hooks/useEmployeeContext";
+import { memo } from "react";
+import { useAppSelector } from "../app/hooks";
+import { selectDepartmentCounts, selectEmployeeCount, selectEmployeeError, selectEmployeeLoading, selectTotalSalary, } from "../features/employees/employeeSelectors";
 
 const EmployeeStats = () => {
-  const {
-    state: { employees },
-    employeeCount,
-  } = useEmployeeContext();
+  const employeeCount = useAppSelector(
+    selectEmployeeCount,
+  );
 
-  const totalSalary = useMemo(() => {
-    return employees.reduce(
-      (total, employee) => total + Number(employee.salary ?? 0),
-      0,
+  const totalSalary = useAppSelector(
+    selectTotalSalary,
+  );
+
+  const departmentCounts = useAppSelector(
+    selectDepartmentCounts,
+  );
+
+  const loading = useAppSelector(
+    selectEmployeeLoading,
+  );
+
+  const error = useAppSelector(
+    selectEmployeeError,
+  );
+
+  if (loading && employeeCount === 0) {
+    return (
+      <p role="status">
+        Loading employee statistics...
+      </p>
     );
-  }, [employees]);;
+  }
 
-  const departmentCounts = useMemo(() => {
-    return employees.reduce<Record<string, number>>(
-      (counts, employee) => {
-        const department = employee.department;
-
-        counts[department] =
-          (counts[department] ?? 0) + 1;
-
-        return counts;
-      },
-      {},
+  if (error && employeeCount === 0) {
+    return (
+      <p role="alert">
+        Could not load statistics: {error}
+      </p>
     );
-  }, [employees]);
+  }
 
   return (
     <section
@@ -40,12 +51,17 @@ const EmployeeStats = () => {
 
       <div className="stats-card">
         <h2>Total Salary</h2>
-        <p>₹{totalSalary.toLocaleString("en-IN")}</p>
+        <p>
+          ₹{totalSalary.toLocaleString("en-IN")}
+        </p>
       </div>
 
       {Object.entries(departmentCounts).map(
         ([department, count]) => (
-          <div className="stats-card" key={department}>
+          <div
+            className="stats-card"
+            key={department}
+          >
             <h2>{department}</h2>
             <p>{count}</p>
           </div>

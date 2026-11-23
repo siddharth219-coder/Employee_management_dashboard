@@ -1,47 +1,81 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
 import EmployeeForm from "../components/EmployeeForm";
-import { useEmployeeContext } from "../hooks/useEmployeeContext";
+import { selectEmployeeById, selectEmployeeError, selectEmployeeLoading, selectSelectedEmployee } from "../features/employees/employeeSelectors";
+import { selectEmployee } from "../features/employees/employeeSlice";
+import { fetchEmployeeByIdThunk } from "../features/employees/employeeThunks";
 
 const EditEmployee = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
 
-  const {
-    state: { employees, selectedEmployee },
-    selectEmployee,
-    isLoading,
-  } = useEmployeeContext();
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   const employeeId = Number(id);
 
-  const employee = employees.find(
-    (currentEmployee) => currentEmployee.id === employeeId,
+  const employee = useAppSelector((state) =>
+    selectEmployeeById(state, employeeId),
   );
 
+  const selectedEmployee = useAppSelector(
+    selectSelectedEmployee,
+  );
+
+  const loading = useAppSelector(
+    selectEmployeeLoading,
+  );
+
+  const error = useAppSelector(
+    selectEmployeeError,
+  );
+
+  const requestedEmployeeRef = useRef(false);
+
   useEffect(() => {
-    if (employee) {
-      selectEmployee(employee);
+    if (
+      Number.isFinite(employeeId) &&
+      employee
+    ) {
+      dispatch(selectEmployee(employee));
+      return;
     }
 
+    if (
+      Number.isFinite(employeeId) &&
+      !employee &&
+      !loading &&
+      !requestedEmployeeRef.current
+    ) {
+      requestedEmployeeRef.current = true;
+
+      dispatch(
+        fetchEmployeeByIdThunk(employeeId),
+      );
+    }
+  }, [
+    dispatch,
+    employee,
+    employeeId,
+    loading,
+  ]);
+
+  useEffect(() => {
     return () => {
-      selectEmployee(null);
+      dispatch(selectEmployee(null));
     };
-  }, [employee, selectEmployee]);
+  }, [dispatch]);
 
-  if (isLoading) {
-    return <p role="status">Loading employee...</p>;
-  }
-
-  if (!id || !Number.isFinite(employeeId) || !employee) {
+  if (!id || !Number.isFinite(employeeId)) {
     return (
       <section>
-        <h1>Employee Not Found</h1>
-        <p>The employee you are trying to edit does not exist.</p>
+        <h2>Invalid Employee ID</h2>
 
         <button
           type="button"
-          onClick={() => navigate("/employees")}
+          onClick={() =>
+            navigate("/employees")
+          }
         >
           Back to Employees
         </button>
@@ -49,16 +83,57 @@ const EditEmployee = () => {
     );
   }
 
-  if (selectedEmployee?.id !== employee.id) {
-    return <p role="status">Preparing employee form...</p>;
+  if (
+    loading &&
+    selectedEmployee?.id !== employeeId
+  ) {
+    return (
+      <p role="status">
+        Loading employee...
+      </p>
+    );
+  }
+
+  if (
+    error &&
+    !employee &&
+    selectedEmployee?.id !== employeeId
+  ) {
+    return (
+      <section>
+        <h2>Employee Not Found</h2>
+        <p role="alert">{error}</p>
+
+        <button
+          type="button"
+          onClick={() =>
+            navigate("/employees")
+          }
+        >
+          Back to Employees
+        </button>
+      </section>
+    );
+  }
+
+  if (
+    !employee ||
+    selectedEmployee?.id !== employeeId
+  ) {
+    return (
+      <p role="status">
+        Preparing employee form...
+      </p>
+    );
   }
 
   return (
     <section>
-
       <EmployeeForm
         key={employee.id}
-        onSuccess={() => navigate("/employees")}
+        onSuccess={() =>
+          navigate("/employees")
+        }
       />
     </section>
   );

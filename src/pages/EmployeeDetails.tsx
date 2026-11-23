@@ -1,74 +1,174 @@
-import React from 'react'
-import { useNavigate, useParams, Link } from 'react-router-dom'
-import { useEmployeeContext } from '../hooks/useEmployeeContext'
-
-interface EmployeeRouteParams{
-    id: string
-}
-
+import { useEffect, useRef } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+import { selectEmployeeById, selectEmployeeError, selectEmployeeLoading } from "../features/employees/employeeSelectors";
+import { selectEmployee } from "../features/employees/employeeSlice";
+import { fetchEmployeeByIdThunk } from "../features/employees/employeeThunks";
 
 const EmployeeDetails = () => {
+    const { id } = useParams<{ id: string }>();
 
-    const { id }=useParams<keyof EmployeeRouteParams>()
-    const navigate= useNavigate()
+    const dispatch = useAppDispatch();
+    const navigate = useNavigate();
 
-    const {
-        state:{employees},
-        isLoading,
-        error,
-    }=useEmployeeContext()
+    const employeeId = Number(id);
 
+    const employee = useAppSelector((state) =>
+        selectEmployeeById(state, employeeId),
+    );
 
-    if (isLoading) {
-        return <p role='status'>Loading employee...</p>
-    }
+    const loading = useAppSelector(
+        selectEmployeeLoading,
+    );
 
-    if (error) {
-        return <p role='alert'>{error}</p>
-    }
+    const error = useAppSelector(
+        selectEmployeeError,
+    );
 
-    const employeeId = Number(id)
-    const employee=employees.find(
-        (currentEmployee)=> currentEmployee.id === employeeId,
-    )
+    const requestedEmployeeRef = useRef(false);
 
-    if (!id || !Number.isFinite(employeeId)|| !employee) {
+    useEffect(() => {
+        if (
+            Number.isFinite(employeeId) &&
+            employee
+        ) {
+            dispatch(selectEmployee(employee));
+            return;
+        }
+
+        if (
+            Number.isFinite(employeeId) &&
+            !employee &&
+            !loading &&
+            !requestedEmployeeRef.current
+        ) {
+            requestedEmployeeRef.current = true;
+
+            dispatch(
+                fetchEmployeeByIdThunk(employeeId),
+            );
+        }
+    }, [
+        dispatch,
+        employee,
+        employeeId,
+        loading,
+    ]);
+
+    useEffect(() => {
+        return () => {
+            dispatch(selectEmployee(null));
+        };
+    }, [dispatch]);
+
+    const handleRetry = (): void => {
+        requestedEmployeeRef.current = true;
+
+        dispatch(
+            fetchEmployeeByIdThunk(employeeId),
+        );
+    };
+
+    if (!id || !Number.isFinite(employeeId)) {
         return (
             <section>
-                <h1>Employee Not Found</h1>
-                <p>The requested employee does not exist.</p>
-                <button type='button' onClick={()=> navigate("/employees")}>
+                <h2>Invalid Employee ID</h2>
+
+                <button
+                    type="button"
+                    onClick={() =>
+                        navigate("/employees")
+                    }
+                >
                     Back to Employees
                 </button>
             </section>
-        )
+        );
     }
 
-  return (
-    <section className='employee-details'>
-        <h1>{employee.name}</h1>
-        <dl>
-            <dt>Email</dt>
-            <dd>{employee.email}</dd>
+    if (loading && !employee) {
+        return (
+            <p role="status">
+                Loading employee...
+            </p>
+        );
+    }
 
-            <dt>Department</dt>
-            <dd>{employee.department}</dd>
+    if (error && !employee) {
+        return (
+            <section>
+                <h2>Employee Not Found</h2>
+                <p role="alert">{error}</p>
 
-            <dt>Designation</dt>
-            <dd>{employee.designation}</dd>
+                <button
+                    className="retry-button"
+                    type="button"
+                    onClick={handleRetry}
+                >
+                    Retry
+                </button>
 
-            <dt>Salary</dt>
-            <dd>₹{employee.salary.toLocaleString("en-IN")}</dd>
-        </dl>
+                <button
+                    type="button"
+                    onClick={() =>
+                        navigate("/employees")
+                    }
+                >
+                    Back to Employees
+                </button>
+            </section>
+        );
+    }
 
-        <div className='employee-details-actions'>
-            <Link to={`/employees/edit/${employee.id}`}>Edit</Link>
-            <button type='button' onClick={()=> navigate("/employees")}>
-                Back to Employees
-            </button>
-        </div>
-    </section>
-  )
-}
+    if (!employee) {
+        return (
+            <p role="status">
+                Preparing employee details...
+            </p>
+        );
+    }
 
-export default EmployeeDetails
+    return (
+        <section className="employee-details">
+            <h2>{employee.name}</h2>
+
+            <dl>
+                <dt>Email</dt>
+                <dd>{employee.email}</dd>
+
+                <dt>Department</dt>
+                <dd>{employee.department}</dd>
+
+                <dt>Designation</dt>
+                <dd>{employee.designation}</dd>
+
+                <dt>Salary</dt>
+                <dd>
+                    ₹
+                    {Number(
+                        employee.salary,
+                    ).toLocaleString("en-IN")}
+                </dd>
+            </dl>
+
+            <div className="employee-details-actions">
+                <Link
+                    to={`/employees/edit/${employee.id}`}
+                >
+                    Edit Employee
+                </Link>
+
+                <button
+                    type="button"
+                    onClick={() =>
+                        navigate("/employees")
+                    }
+                >
+                    Back to Employees
+                </button>
+            </div>
+        </section>
+    );
+};
+
+export default EmployeeDetails;

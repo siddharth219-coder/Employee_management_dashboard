@@ -1,13 +1,4 @@
-import {
-    useEffect,
-    createContext,
-    useCallback,
-    useMemo,
-    useState,
-    type Dispatch,
-    type ReactNode,
-    type SetStateAction,
-} from "react";
+import { useEffect, createContext, useCallback, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 
 export type Theme = "light" | "dark";
 export type ViewMode = "card" | "table";
